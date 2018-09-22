@@ -48,7 +48,7 @@ dishRouter.route('/')
 // Route for /dishes/:dishId
 dishRouter.route('/:dishId')
 .get((req , res , next) => {
-    Dishes.findById(req,params.dishId)
+    Dishes.findById(req.params.dishId)
         .then((dish) => {
             res.statusCode = 200;
             res.setHeader('Content-Type' , 'application/json');
@@ -148,7 +148,7 @@ dishRouter.route('/:dishId/comments')
 
 });
 
-// Route for /dishes/:dishId
+// Route for a particular comment of comments of a particular dish
 dishRouter.route('/:dishId/comments/commentId')
 .get((req , res , next) => {
     Dishes.findById(req,params.dishId)
