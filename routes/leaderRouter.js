@@ -45,7 +45,7 @@ leaderRouter.route('/')
 });
 
 // Route for /leaders/:leaderId
-LeaderRouter.route('/:leaderId')
+leaderRouter.route('/:leaderId')
 .get((req , res , next) => {
     Leaders.findById(req.params.leaderId)
         .then((leader) => {
