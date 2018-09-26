@@ -33,39 +33,55 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('12345-67890-09876-54321'));        // Signed Cookie
 
 function auth(req , res , next) {
-    console.log(req.headers);
+    console.log(req.signedCookies);
 
-    var authHeader = req.headers.authorization;
+    if(!req.signedCookies.reguser) {
+      console.log(req.headers.authorization);
+      var authHeader = req.headers.authorization;
     
-    if(!authHeader){
-        var err = new Error('You are not Authenticated!');
-        res.setHeader('WWW-Authenticate' , 'Basic');
-        err.status = 401 ;                  // Not Authenicated Error Status Code
-        return next(err);                   // Call to Error handler defined in Express-Generator 
-    }
-
-    // ** First split to separate Basic and base64 encoded code and second split
-    //    to separate username and password  **
-    var auth = new Buffer(authHeader.split(' ')[1] , 'base64').toString().split(':');
-    var username = auth[0];
-    var password = auth[1];
-
-    if(username === 'admin'  &&  password === 'password'){
-        next();                             // Existing User is allowed to passthrough to next middleware
+      if(!authHeader){
+          var err = new Error('You are not Authenticated!');
+          res.setHeader('WWW-Authenticate' , 'Basic');
+          err.status = 401 ;                  // Not Authenicated Error Status Code
+          return next(err);                   // Call to Error handler defined in Express-Generator 
+      }
+  
+      // ** First split to separate Basic and base64 encoded code and second split
+      //    to separate username and password  **
+      var auth = new Buffer(authHeader.split(' ')[1] , 'base64').toString().split(':');
+      var username = auth[0];
+      var password = auth[1];
+  
+      if(username === 'admin'  &&  password === 'password'){
+          res.cookie('reguser' , 'admin' , {signed : true});
+          next();                             // Existing User is allowed to passthrough to next middleware
+      }
+      else {
+          var err = new Error('You are not Authenticated!');
+          res.setHeader('WWW-Authenticate' , 'Basic');
+          err.status = 401 ;                  // Username or Pasword not matched error
+          return next(err);                   // Call to Error handler defined in Express-Generator 
+      }
     }
     else {
+      if(req.signedCookies.reguser === 'admin'){
+        next();
+      }
+      else {
         var err = new Error('You are not Authenticated!');
-        res.setHeader('WWW-Authenticate' , 'Basic');
         err.status = 401 ;                  // Username or Pasword not matched error
-        return next(err);                   // Call to Error handler defined in Express-Generator 
+        return next(err);                   // Call to Error handler defined in Express-Generator     
+      }
     }
+
+  
     
 }
 
-app.use(auth)                               // To Authenticate before accessing static resources
+app.use(auth);                               // To Authenticate before accessing static resources
                                             // and various routes
 app.use(express.static(path.join(__dirname, 'public')));
 
