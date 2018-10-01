@@ -3,6 +3,8 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var session = require('express-session');
+var FileStore = require('session-file-store')(session);
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -33,12 +35,19 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('12345-67890-09876-54321'));        // Signed Cookie
+// app.use(cookieParser('12345-67890-09876-54321'));        // Signed Cookie
+app.use(session({
+  name: 'session-id' ,
+  secret: '12345-67890-09876-54321' ,
+  saveUninitialized: false ,
+  resave: false ,
+  store: new FileStore()
+}))
 
 function auth(req , res , next) {
-    console.log(req.signedCookies);
+    console.log(req.session);
 
-    if(!req.signedCookies.reguser) {
+    if(!req.session.user) {
       console.log(req.headers.authorization);
       var authHeader = req.headers.authorization;
     
@@ -56,8 +65,8 @@ function auth(req , res , next) {
       var password = auth[1];
   
       if(username === 'admin'  &&  password === 'password'){
-          res.cookie('reguser' , 'admin' , {signed : true});
-          next();                             // Existing User is allowed to passthrough to next middleware
+        req.session.user = 'admin'
+        next();                             // Existing User is allowed to passthrough to next middleware
       }
       else {
           var err = new Error('You are not Authenticated!');
@@ -67,7 +76,7 @@ function auth(req , res , next) {
       }
     }
     else {
-      if(req.signedCookies.reguser === 'admin'){
+      if(req.session.user === 'admin'){
         next();
       }
       else {
@@ -109,3 +118,51 @@ app.use(function(err, req, res, next) {
 });
 
 module.exports = app;
+
+/* Cookie Part
+function auth(req , res , next) {
+  console.log(req.signedCookies);
+
+  if(!req.signedCookies.reguser) {
+    console.log(req.headers.authorization);
+    var authHeader = req.headers.authorization;
+  
+    if(!authHeader){
+        var err = new Error('You are not Authenticated!');
+        res.setHeader('WWW-Authenticate' , 'Basic');
+        err.status = 401 ;                  // Not Authenicated Error Status Code
+        return next(err);                   // Call to Error handler defined in Express-Generator 
+    }
+
+    // ** First split to separate Basic and base64 encoded code and second split
+    //    to separate username and password  **
+    var auth = new Buffer(authHeader.split(' ')[1] , 'base64').toString().split(':');
+    var username = auth[0];
+    var password = auth[1];
+
+    if(username === 'admin'  &&  password === 'password'){
+        res.cookie('reguser' , 'admin' , {signed : true});
+        next();                             // Existing User is allowed to passthrough to next middleware
+    }
+    else {
+        var err = new Error('You are not Authenticated!');
+        res.setHeader('WWW-Authenticate' , 'Basic');
+        err.status = 401 ;                  // Username or Pasword not matched error
+        return next(err);                   // Call to Error handler defined in Express-Generator 
+    }
+  }
+  else {
+    if(req.signedCookies.reguser === 'admin'){
+      next();
+    }
+    else {
+      var err = new Error('You are not Authenticated!');
+      err.status = 401 ;                  // Username or Pasword not matched error
+      return next(err);                   // Call to Error handler defined in Express-Generator     
+    }
+  }
+
+
+  
+}
+*/
