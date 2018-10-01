@@ -1,6 +1,7 @@
 var express = require('express');
 const bodyParser = require('body-parser');
 var User = require('../models/user');
+var passport = require('passport')
 
 var router = express.Router();
 
@@ -10,27 +11,30 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/signup', (req, res, next) => {
-  User.findOne({username: req.body.username})
-   .then((user) => {
-     if(user != null) {
-      var err = new Error('User ' + req.body.username + ' Already Exists!');
-      err.status = 403;                                     // Forbidden
-      next(err);
+  User.register(new User({username: req.body.username}),
+     req.body.password , (err , user) => {
+     if(err) {
+      res.statusCode = 500 ;
+      res.setHeader('Content-Type' , 'application/json');
+      res.json({err : err});      
      }
      else {
-       return User.create({
-        username: req.body.username , 
-        password: req.body.password })
+       passport.authenticate('local')(req, res, () => {
+        res.statusCode = 200 ;
+        res.setHeader('Content-Type' , 'application/json');
+        res.json({sucess: true, status : 'Registration Successfull!'});  
+       });
      }
    })
-   .then((user) => {                              // Returned Created User from Above Else 
-      res.statusCode = 200 ;
-      res.setHeader('Content-Type' , 'application/json');
-      res.json({status : 'Registration Successfull!' , user: user});
-   }, (err) => next(err))
-   .catch((err) => next(err))
 });
 
+router.post('/login' , passport.authenticate('local') , (req, res) => {
+  res.statusCode = 200 ;
+  res.setHeader('Content-Type' , 'application/json');
+  res.json({sucess: true, status : 'You are successfully logged in!'});
+})
+
+/*  Without passport login route
 router.post('/login' , (req, res, next) => {
 
   if(!req.session.user) {
@@ -79,6 +83,7 @@ router.post('/login' , (req, res, next) => {
   }
 
 })
+*/
 
 router.get('/logout' , (req , res) => {
   if(req.session) {

@@ -5,6 +5,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
 var FileStore = require('session-file-store')(session);
+var passport = require('passport');
+var authenticate = require('./authenticate');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -44,34 +46,25 @@ app.use(session({
   store: new FileStore()
 }))
 
+app.use(passport.initialize());
+app.use(passport.session());        // Adds user method in req
+
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 function auth(req , res , next) {
-    console.log(req.session);
-
-    if(!req.session.user) {
+    if(!req.user) {
           var err = new Error('You are not Authenticated!');
           err.status = 403 ;                  // Forbidden
           return next(err);                   // Call to Error handler defined in Express-Generator 
     }
     else {
-      if(req.session.user === 'authenticated'){
         next();
-      }
-      else {
-        var err = new Error('You are not Authenticated!');
-        err.status = 403 ;                  // Username or Pasword not matched error
-        return next(err);                   // Call to Error handler defined in Express-Generator     
-      }
     }
-
-  
-    
 }
 
 app.use(auth);                               // To Authenticate before accessing static resources
-                                            // and various routes
+                                             // and various routes
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/dishes', dishRouter);
