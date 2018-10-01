@@ -44,44 +44,24 @@ app.use(session({
   store: new FileStore()
 }))
 
+app.use('/', indexRouter);
+app.use('/users', usersRouter);
+
 function auth(req , res , next) {
     console.log(req.session);
 
     if(!req.session.user) {
-      console.log(req.headers.authorization);
-      var authHeader = req.headers.authorization;
-    
-      if(!authHeader){
           var err = new Error('You are not Authenticated!');
-          res.setHeader('WWW-Authenticate' , 'Basic');
-          err.status = 401 ;                  // Not Authenicated Error Status Code
+          err.status = 403 ;                  // Forbidden
           return next(err);                   // Call to Error handler defined in Express-Generator 
-      }
-  
-      // ** First split to separate Basic and base64 encoded code and second split
-      //    to separate username and password  **
-      var auth = new Buffer(authHeader.split(' ')[1] , 'base64').toString().split(':');
-      var username = auth[0];
-      var password = auth[1];
-  
-      if(username === 'admin'  &&  password === 'password'){
-        req.session.user = 'admin'
-        next();                             // Existing User is allowed to passthrough to next middleware
-      }
-      else {
-          var err = new Error('You are not Authenticated!');
-          res.setHeader('WWW-Authenticate' , 'Basic');
-          err.status = 401 ;                  // Username or Pasword not matched error
-          return next(err);                   // Call to Error handler defined in Express-Generator 
-      }
     }
     else {
-      if(req.session.user === 'admin'){
+      if(req.session.user === 'authenticated'){
         next();
       }
       else {
         var err = new Error('You are not Authenticated!');
-        err.status = 401 ;                  // Username or Pasword not matched error
+        err.status = 403 ;                  // Username or Pasword not matched error
         return next(err);                   // Call to Error handler defined in Express-Generator     
       }
     }
@@ -94,8 +74,6 @@ app.use(auth);                               // To Authenticate before accessing
                                             // and various routes
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
-app.use('/users', usersRouter);
 app.use('/dishes', dishRouter);
 app.use('/promos', promoRouter);
 app.use('/leaders', leaderRouter);
