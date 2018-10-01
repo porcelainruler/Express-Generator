@@ -7,6 +7,7 @@ var session = require('express-session');
 var FileStore = require('session-file-store')(session);
 var passport = require('passport');
 var authenticate = require('./authenticate');
+var config = require('./config');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -19,7 +20,7 @@ mongoose.Promise = require('bluebird');
 
 const Dishes = require('./models/dishes');
 
-const url = 'mongodb://localhost:27017/conFusion';
+const url = config.mongoUrl;
 const connect = mongoose.connect(url , {
   useMongoClient: true
 });
@@ -37,7 +38,9 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
 // app.use(cookieParser('12345-67890-09876-54321'));        // Signed Cookie
+/*
 app.use(session({
   name: 'session-id' ,
   secret: '12345-67890-09876-54321' ,
@@ -45,13 +48,16 @@ app.use(session({
   resave: false ,
   store: new FileStore()
 }))
+*/
 
 app.use(passport.initialize());
-app.use(passport.session());        // Adds user method in req
+// app.use(passport.session());        // Adds user method in req  ** Now we are using tokens not session **
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
+
+/*   *** Now in tokens we require auth on only certain routes which is implemented diff. ***
 function auth(req , res , next) {
     if(!req.user) {
           var err = new Error('You are not Authenticated!');
@@ -65,6 +71,8 @@ function auth(req , res , next) {
 
 app.use(auth);                               // To Authenticate before accessing static resources
                                              // and various routes
+*/
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/dishes', dishRouter);
